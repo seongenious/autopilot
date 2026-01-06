@@ -205,3 +205,67 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# =============================================================================
+# Autopilot Project Specific
+# =============================================================================
+
+# Dataset files (large binary files)
+data/
+*.pkl
+*.bin
+*.pcd
+*.ply
+
+# Pretrained weights
+pretrained/*.pth
+pretrained/*.pt
+pretrained/*.ckpt
+*.pth
+*.pt
+!configs/**/*.yaml
+
+# Training outputs
+outputs/
+checkpoints/
+logs/
+tensorboard/
+wandb/
+result/
+
+# Hydra outputs
+multirun/
+.hydra/
+
+# nuScenes
+nuscenes/
+v1.0-mini/
+v1.0-trainval/
+v1.0-test/
+*_infos_*.pkl
+
+# Waymo
+waymo/
+waymo_format/
+*.tfrecord
+
+# Model outputs
+predictions/
+visualizations/
+results/
+
+# Jupyter notebooks outputs
+notebooks/*.html
+notebooks/.ipynb_checkpoints/
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/

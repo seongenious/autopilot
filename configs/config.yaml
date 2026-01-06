@@ -1,0 +1,39 @@
+# Autopilot - Main Configuration
+# Use Hydra's composition to build complete configs
+
+defaults:
+  - dataset: nuscenes
+  - model/backbone@backbone: regnet
+  - model/backbone@neck: bifpn
+  - training: default
+  - _self_
+
+# Project info
+project:
+  name: autopilot
+  version: "0.1.0"
+
+# Output directory (Hydra will manage this)
+# outputs will be saved to: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+
+# Seed for reproducibility
+seed: 42
+
+# Hardware settings
+hardware:
+  gpus: 1
+  num_workers: 8
+  precision: 16  # 16, 32, or "bf16"
+
+# Logging
+logging:
+  logger: tensorboard  # tensorboard, wandb
+  log_every_n_steps: 50
+
+# Hydra configuration
+hydra:
+  run:
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep:
+    dir: outputs/multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}

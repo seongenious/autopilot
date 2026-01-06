@@ -1,0 +1,28 @@
+# Map Prediction Head Configuration
+
+map_head:
+  type: MapHead  # TODO: Implement
+
+  # Input channels from neck
+  in_channels: 256
+
+  # Map classes
+  classes:
+    - lane_divider
+    - road_boundary
+    - pedestrian_crossing
+    - road_segment
+
+  num_classes: 4
+
+  # BEV grid settings
+  bev_size: [200, 200]  # [H, W]
+  pc_range: [-51.2, -51.2, 51.2, 51.2]  # [x_min, y_min, x_max, y_max]
+
+  # Head architecture
+  hidden_channels: 128
+  num_conv_layers: 3
+
+  # Loss settings
+  loss_type: dice  # dice, ce, focal
+  loss_weight: 5.0

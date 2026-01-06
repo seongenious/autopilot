@@ -1,0 +1,30 @@
+# ResNet Backbone Configuration
+# @package backbone
+
+type: ResNetBackbone
+
+# Model variant - resnet18 gives [64, 128, 256, 512] channels
+# For input 480x640: outputs are (120x160), (60x80), (30x40), (15x20)
+model_name: resnet18
+
+# Pretrained weights from timm
+pretrained: true
+
+# Output feature indices (0-3 for layer1-4)
+# All 4 stages for multi-scale features
+out_indices: [0, 1, 2, 3]
+
+# Freeze early stages for transfer learning
+# -1: no freezing, 0: freeze stem, 1+: freeze stages
+frozen_stages: -1
+
+# Keep BatchNorm in eval mode during training
+norm_eval: false
+
+# Expected output channels for resnet18: [64, 128, 256, 512]
+# Expected output strides: [4, 8, 16, 32]
+# For input H=480, W=640:
+#   Stage 0: 120 x 160 x 64
+#   Stage 1: 60 x 80 x 128
+#   Stage 2: 30 x 40 x 256
+#   Stage 3: 15 x 20 x 512

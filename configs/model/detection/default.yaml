@@ -1,0 +1,35 @@
+# 3D Object Detection Head Configuration
+
+detection_head:
+  type: CenterHead  # TODO: Implement
+
+  # Input channels from neck
+  in_channels: 256
+
+  # Task heads
+  tasks:
+    - num_classes: 1
+      class_names: [car]
+    - num_classes: 2
+      class_names: [truck, trailer]
+    - num_classes: 2
+      class_names: [bus, construction_vehicle]
+    - num_classes: 1
+      class_names: [pedestrian]
+    - num_classes: 2
+      class_names: [motorcycle, bicycle]
+    - num_classes: 2
+      class_names: [traffic_cone, barrier]
+
+  # Shared convolutions
+  shared_conv_channels: 64
+  num_shared_convs: 2
+
+  # Detection settings
+  code_size: 10  # [x, y, z, w, l, h, sin, cos, vx, vy]
+
+  # Loss weights
+  loss_weight:
+    cls: 1.0
+    bbox: 0.25
+    heatmap: 1.0

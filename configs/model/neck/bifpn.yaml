@@ -1,0 +1,26 @@
+# BiFPN Neck Configuration for ResNet18 backbone
+# @package neck
+
+type: BiFPN
+
+# Input channels from backbone (must match backbone output)
+# For ResNet18: [64, 128, 256, 512]
+in_channels: [64, 128, 256, 512]
+
+# Output channels for all pyramid levels (128 as specified)
+out_channels: 128
+
+# Number of feature pyramid levels (same as input levels)
+num_levels: 4
+
+# Number of BiFPN layers to stack
+num_layers: 3
+
+# Epsilon for numerical stability in weighted fusion
+epsilon: 1.0e-4
+
+# Expected output for input H=480, W=640:
+#   Level 0: 120 x 160 x 128
+#   Level 1: 60 x 80 x 128
+#   Level 2: 30 x 40 x 128
+#   Level 3: 15 x 20 x 128
