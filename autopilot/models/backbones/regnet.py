@@ -1,102 +1,76 @@
-"""RegNet backbone using timm pretrained models.
+"""RegNet backbone using timm pretrained models."""
 
-RegNet is a family of efficient network architectures designed through
-neural architecture search, providing good accuracy-efficiency trade-offs.
+from typing import List, Tuple
 
-Reference:
-    - Paper: https://arxiv.org/abs/2003.13678
-    - timm: https://github.com/huggingface/pytorch-image-models
-"""
-
-from typing import Dict, List, Optional, Tuple
-
+import timm
 import torch
-import torch.nn as nn
 
-try:
-    import timm
-except ImportError:
-    raise ImportError('Please install timm: pip install timm')
-
+from autopilot.models.base import BaseModule
 from autopilot.utils.registry import BACKBONES
 
 
 @BACKBONES.register_module()
-class RegNetBackbone(nn.Module):
+class RegNet(BaseModule):
     """RegNet backbone with timm pretrained weights.
 
-    Extracts multi-scale features from input images using RegNet architecture.
-    Supports various RegNet variants (regnetx_*, regnety_*).
-
-    Args:
-        model_name: timm model name (e.g., 'regnetx_032', 'regnety_040').
-        pretrained: Whether to load pretrained weights.
-        out_indices: Indices of stages to output features from (0-3).
-        frozen_stages: Number of stages to freeze (-1 means no freezing).
-        norm_eval: Whether to set BN layers to eval mode during training.
-
-    Example:
-        >>> backbone = RegNetBackbone(
-        ...     model_name='regnetx_032',
-        ...     pretrained=True,
-        ...     out_indices=(1, 2, 3),
-        ... )
-        >>> x = torch.randn(1, 3, 640, 960)
-        >>> features = backbone(x)
-        >>> for i, f in enumerate(features):
-        ...     print(f'Stage {i}: {f.shape}')
+    Supported architectures and output channels:
+        - regnetx_002: [24, 56, 152, 368]
+        - regnetx_004: [32, 64, 160, 384]
+        - regnetx_006: [48, 96, 240, 528]
+        - regnetx_008: [64, 128, 288, 672]
+        - regnetx_016: [72, 168, 408, 912]
+        - regnetx_032: [96, 192, 432, 1008]
+        - regnetx_040: [80, 240, 560, 1360]
+        - regnetx_064: [168, 392, 784, 1624]
+        - regnetx_080: [80, 240, 720, 1920]
+        - regnety_002: [24, 56, 152, 368]
+        - regnety_004: [48, 104, 208, 440]
+        - regnety_006: [48, 112, 256, 608]
+        - regnety_008: [64, 128, 320, 768]
+        - regnety_016: [48, 120, 336, 888]
+        - regnety_032: [72, 216, 576, 1512]
+        - regnety_040: [128, 192, 512, 1088]
+        - regnety_064: [144, 288, 576, 1296]
+        - regnety_080: [168, 448, 896, 2016]
     """
-
-    AVAILABLE_MODELS = [
-        # RegNetX variants
-        'regnetx_002', 'regnetx_004', 'regnetx_006', 'regnetx_008',
-        'regnetx_016', 'regnetx_032', 'regnetx_040', 'regnetx_064',
-        'regnetx_080', 'regnetx_120', 'regnetx_160', 'regnetx_320',
-        # RegNetY variants (with SE attention)
-        'regnety_002', 'regnety_004', 'regnety_006', 'regnety_008',
-        'regnety_016', 'regnety_032', 'regnety_040', 'regnety_064',
-        'regnety_080', 'regnety_120', 'regnety_160', 'regnety_320',
-    ]
 
     def __init__(
         self,
-        model_name: str = 'regnetx_032',
+        arch: str = 'regnetx_032',
         pretrained: bool = True,
-        out_indices: Tuple[int, ...] = (0, 1, 2, 3),
+        out_indices: Tuple[int, ...] = (1, 2, 3, 4),
         frozen_stages: int = -1,
-        norm_eval: bool = False,
-    ) -> None:
-        """Initialize RegNetBackbone."""
+    ):
+        """Initialize RegNet backbone.
+
+        Args:
+            arch: RegNet architecture name (e.g., 'regnetx_032', 'regnety_040').
+            pretrained: Whether to use pretrained weights.
+            out_indices: Output feature indices (1=s1, 2=s2, 3=s3, 4=s4). 0=stem.
+            frozen_stages: Stages to freeze (-1=none, 0=stem, 1=stem+s1, ...).
+        """
         super().__init__()
 
-        self.model_name = model_name
-        self.pretrained = pretrained
+        self.arch = arch
         self.out_indices = out_indices
         self.frozen_stages = frozen_stages
-        self.norm_eval = norm_eval
 
-        # Create model with feature extraction
+        # Create model with timm
         self.model = timm.create_model(
-            model_name,
+            arch,
             pretrained=pretrained,
             features_only=True,
             out_indices=out_indices,
         )
 
-        # Get feature info for downstream modules (only for selected out_indices)
-        self.feature_info = self.model.feature_info
-        self._out_channels = [self.feature_info[i]['num_chs'] for i in out_indices]
+        # Get output channels from timm
+        self.out_channels = self.model.feature_info.channels()
 
-        # Freeze stages if specified
+        # Freeze stages
         self._freeze_stages()
 
-    @property
-    def out_channels(self) -> List[int]:
-        """Return output channel dimensions for each stage."""
-        return self._out_channels
-
     def _freeze_stages(self) -> None:
-        """Freeze early stages of the network."""
+        """Freeze stages based on frozen_stages setting."""
         if self.frozen_stages < 0:
             return
 
@@ -106,72 +80,27 @@ class RegNetBackbone(nn.Module):
             for param in self.model.stem.parameters():
                 param.requires_grad = False
 
-        # Freeze stages
-        for i in range(min(self.frozen_stages, 4)):
-            stage = getattr(self.model, f's{i + 1}', None)
+        # Freeze stages (s1, s2, s3, s4)
+        for i in range(1, self.frozen_stages + 1):
+            stage = getattr(self.model, f's{i}', None)
             if stage is not None:
                 stage.eval()
                 for param in stage.parameters():
                     param.requires_grad = False
 
-    def train(self, mode: bool = True) -> 'RegNetBackbone':
-        """Set training mode, optionally keeping BN in eval mode."""
-        super().train(mode)
-
-        self._freeze_stages()
-
-        if mode and self.norm_eval:
-            for m in self.modules():
-                if isinstance(m, nn.BatchNorm2d):
-                    m.eval()
-
-        return self
-
     def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
         """Forward pass.
 
         Args:
-            x: Input tensor of shape (B, 3, H, W).
+            x: Input tensor (B, 3, H, W).
 
         Returns:
             List of feature maps at different scales.
         """
         return self.model(x)
 
-    def get_output_info(self) -> List[Dict]:
-        """Get information about output features."""
-        return [
-            {
-                'index': i,
-                'channels': self._out_channels[i],
-                'stride': self.feature_info[i]['reduction'],
-            }
-            for i in range(len(self._out_channels))
-        ]
-
-
-def build_regnet(
-    model_name: str = 'regnetx_032',
-    pretrained: bool = True,
-    **kwargs,
-) -> RegNetBackbone:
-    """Build RegNet backbone.
-
-    Args:
-        model_name: timm model name.
-        pretrained: Whether to load pretrained weights.
-        **kwargs: Additional arguments for RegNetBackbone.
-
-    Returns:
-        Configured RegNetBackbone instance.
-    """
-    return RegNetBackbone(
-        model_name=model_name,
-        pretrained=pretrained,
-        **kwargs,
-    )
-
-
-# TODO: Add support for loading custom pretrained weights
-# TODO: Add support for different input normalization schemes
-# TODO: Implement feature map interpolation for consistent output sizes
+    def train(self, mode: bool = True) -> 'RegNet':
+        """Set training mode, keeping frozen stages in eval."""
+        super().train(mode)
+        self._freeze_stages()
+        return self

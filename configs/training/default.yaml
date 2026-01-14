@@ -1,73 +1,35 @@
-# Training Configuration
-# @package training
+# Training configuration
+trainer:
+  max_epochs: 24
+  accelerator: auto
+  devices: auto
+  precision: 16-mixed
+  gradient_clip_val: 35.0
+  accumulate_grad_batches: 1
+  log_every_n_steps: 50
+  val_check_interval: 1.0
+  check_val_every_n_epoch: 1
 
-# Epochs and steps
-max_epochs: 5
-val_check_interval: 1.0  # Validate every epoch
-
-# Optimizer
 optimizer:
   type: AdamW
   lr: 2.0e-4
   weight_decay: 0.01
   betas: [0.9, 0.999]
 
-# Learning rate scheduler
 scheduler:
   type: CosineAnnealingLR
-  T_max: ${training.max_epochs}
+  T_max: ${training.trainer.max_epochs}
   eta_min: 1.0e-7
 
-# Warmup
-warmup:
-  enabled: true
-  warmup_epochs: 1
-  warmup_lr: 1.0e-6
-
-# Gradient clipping
-gradient_clip_val: 35.0
-gradient_clip_algorithm: norm
-
-# Accumulation for larger effective batch size
-accumulate_grad_batches: 4  # Effective batch size = batch_size * accumulate_grad_batches
-
-# EMA (Exponential Moving Average)
-ema:
-  enabled: false
-  decay: 0.999
-
-# Checkpointing
-checkpoint:
-  save_top_k: 3
-  monitor: val/loss
-  mode: min
-  save_last: true
-
-# Early stopping
-early_stopping:
-  enabled: false
-  patience: 5
-  monitor: val/loss
-  mode: min
-
-# Augmentation settings
-augmentation:
-  # Spatial augmentation
-  random_flip:
-    enabled: true
-    prob: 0.5
-
-  global_rotate:
-    enabled: true
-    range: [-0.3925, 0.3925]  # [-22.5, 22.5] degrees
-
-  global_scale:
-    enabled: true
-    range: [0.95, 1.05]
-
-  # Image augmentation
-  color_jitter:
-    enabled: true
-    brightness: 0.2
-    contrast: 0.2
-    saturation: 0.2
+callbacks:
+  model_checkpoint:
+    monitor: val/loss
+    mode: min
+    save_top_k: 3
+    save_last: true
+  early_stopping:
+    monitor: val/loss
+    patience: 5
+    mode: min
+  lr_monitor:
+    logging_interval: step

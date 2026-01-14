@@ -1,0 +1,20 @@
+# Panoptic FPN head configuration
+# Based on 'Panoptic Feature Pyramid Networks' (CVPR 2019)
+type: PanopticHead
+in_channels: 256              # Input channels from FPN/BiFPN
+num_things_classes: 8         # Instance classes (car, person, etc.)
+num_stuff_classes: 11         # Stuff classes (road, sky, etc.)
+inner_channels: 128           # Inner feature channels
+num_levels: 4                 # Number of FPN levels
+embed_dim: 32                 # Instance embedding dimension
+
+# Loss weights
+loss_sem_weight: 1.0          # Semantic segmentation loss weight
+loss_center_weight: 1.0       # Center heatmap loss weight
+loss_offset_weight: 0.1       # Offset regression loss weight
+ignore_index: 255             # Ignore index for semantic loss
+
+# Inference parameters (used in predict())
+# center_threshold: 0.1       # Threshold for center detection
+# nms_kernel: 3               # NMS kernel size
+# top_k: 100                  # Max instances per image

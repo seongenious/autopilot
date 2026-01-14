@@ -163,6 +163,7 @@ class Registry:
 # Global registries for different component types
 BACKBONES = Registry('backbones')
 NECKS = Registry('necks')
+ENCODERS = Registry('encoders')
 HEADS = Registry('heads')
 LOSSES = Registry('losses')
 DATASETS = Registry('datasets')

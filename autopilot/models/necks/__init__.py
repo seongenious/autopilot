@@ -1,8 +1,5 @@
-"""Neck modules for feature aggregation.
+"""Neck modules for feature aggregation."""
 
-Necks process backbone features before passing to task heads.
-"""
+from .bifpn import BiFPN
 
-from autopilot.models.necks.bev_transformer import BEVTransformer
-
-__all__ = ['BEVTransformer']
+__all__ = ['BiFPN']

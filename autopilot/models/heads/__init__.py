@@ -1,11 +1,5 @@
-"""Task-specific prediction heads.
+"""Task-specific prediction heads."""
 
-Includes:
-    - detection: 3D object detection heads
-    - map: Map prediction and lane detection heads
-    - depth: Depth estimation heads
-"""
+from .perception2d import PanopticFPN
 
-from autopilot.models.heads import depth, detection, map, planning
-
-__all__ = ['detection', 'map', 'depth', 'planning']
+__all__ = ['PanopticFPN']

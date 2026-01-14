@@ -1,56 +1,67 @@
-# nuScenes Dataset Configuration
-# @package dataset
-type: NuScenesDataset
+# nuScenes dataset configuration
 name: nuscenes
+type: NuScenesDataset
 
-# Data paths (symlink your dataset to data/nuscenes)
+# Data paths
 data_root: data/nuscenes
-train_ann_file: ${dataset.data_root}/nuscenes_infos_train.pkl
-val_ann_file: ${dataset.data_root}/nuscenes_infos_val.pkl
-test_ann_file: ${dataset.data_root}/nuscenes_infos_test.pkl
-
-# Dataset version
-version: v1.0-trainval  # v1.0-trainval, v1.0-mini
-
-# Class configuration
-classes:
-  - car
-  - truck
-  - trailer
-  - bus
-  - construction_vehicle
-  - bicycle
-  - motorcycle
-  - pedestrian
-  - traffic_cone
-  - barrier
+ann_file: data/nuscenes/nuscenes_infos_train.pkl
+val_ann_file: data/nuscenes/nuscenes_infos_val.pkl
 
 # Point cloud range [x_min, y_min, z_min, x_max, y_max, z_max]
-point_cloud_range: [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
-
-# Voxel size for BEV
+pc_range: [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 voxel_size: [0.2, 0.2, 8.0]
 
-# Image configuration
-img_size: [640, 960]  # [H, W]
+# Camera settings
+num_cameras: 6
+img_size: [900, 1600]  # H, W
 img_norm_cfg:
   mean: [123.675, 116.28, 103.53]
   std: [58.395, 57.12, 57.375]
   to_rgb: true
 
-# Camera names
-cameras:
-  - CAM_FRONT
-  - CAM_FRONT_RIGHT
-  - CAM_FRONT_LEFT
-  - CAM_BACK
-  - CAM_BACK_LEFT
-  - CAM_BACK_RIGHT
+# Class names
+class_names:
+  - car
+  - truck
+  - construction_vehicle
+  - bus
+  - trailer
+  - barrier
+  - motorcycle
+  - bicycle
+  - pedestrian
+  - traffic_cone
 
-# Data loading
-use_valid_flag: true
-use_lidar: false  # Camera-only by default
+# Data augmentation
+train_pipeline:
+  - type: LoadMultiViewImageFromFiles
+  - type: LoadAnnotations3D
+  - type: RandomFlip3D
+    flip_ratio: 0.5
+  - type: NormalizeMultiviewImage
+    mean: ${dataset.img_norm_cfg.mean}
+    std: ${dataset.img_norm_cfg.std}
+  - type: PadMultiViewImage
+    size_divisor: 32
+  - type: FormatBundle3D
+  - type: Collect3D
+    keys: [img, gt_bboxes_3d, gt_labels_3d]
+
+val_pipeline:
+  - type: LoadMultiViewImageFromFiles
+  - type: NormalizeMultiviewImage
+    mean: ${dataset.img_norm_cfg.mean}
+    std: ${dataset.img_norm_cfg.std}
+  - type: PadMultiViewImage
+    size_divisor: 32
+  - type: FormatBundle3D
+  - type: Collect3D
+    keys: [img]
 
 # Dataloader settings
-batch_size: 1  # Reduced from 4 to avoid OOM on 16GB GPUs
-shuffle: true
+dataloader:
+  batch_size: 4
+  num_workers: 4
+  shuffle: true
+  drop_last: true
+  pin_memory: true

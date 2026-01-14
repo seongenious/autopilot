@@ -1,27 +1,24 @@
-# RegNet Backbone Configuration
-# @package backbone
-
-type: RegNetBackbone
-
-# Model variant
-# Options: regnetx_002, regnetx_004, regnetx_006, regnetx_008,
-#          regnetx_016, regnetx_032, regnetx_040, regnetx_064,
-#          regnetx_080, regnetx_120, regnetx_160, regnetx_320,
-#          regnety_* (same variants with SE attention)
-model_name: regnetx_032
-
-# Pretrained weights from timm
+# RegNet backbone configuration
+# regnetx_002 output channels: [24, 56, 152, 368]
+# regnetx_004 output channels: [32, 64, 160, 384]
+# regnetx_006 output channels: [48, 96, 240, 528]
+# regnetx_008 output channels: [64, 128, 288, 672]
+# regnetx_016 output channels: [72, 168, 408, 912]
+# regnetx_032 output channels: [96, 192, 432, 1008]
+# regnetx_040 output channels: [80, 240, 560, 1360]
+# regnetx_064 output channels: [168, 392, 784, 1624]
+# regnetx_080 output channels: [80, 240, 720, 1920]
+# regnety_002 output channels: [24, 56, 152, 368]
+# regnety_004 output channels: [48, 104, 208, 440]
+# regnety_006 output channels: [48, 112, 256, 608]
+# regnety_008 output channels: [64, 128, 320, 768]
+# regnety_016 output channels: [48, 120, 336, 888]
+# regnety_032 output channels: [72, 216, 576, 1512]
+# regnety_040 output channels: [128, 192, 512, 1088]
+# regnety_064 output channels: [144, 288, 576, 1296]
+# regnety_080 output channels: [168, 448, 896, 2016]
+type: RegNet
+arch: regnetx_008
 pretrained: true
-
-# Output feature indices (0=stem, 1-4=stages)
-out_indices: [1, 2, 3]
-
-# Freeze early stages for transfer learning
-# -1: no freezing, 0: freeze stem, 1+: freeze stages
-frozen_stages: -1
-
-# Keep BatchNorm in eval mode during training
-norm_eval: false
-
-# Expected output channels for regnetx_032: [96, 192, 432]
-# Adjust neck input channels accordingly
+out_indices: [1, 2, 3, 4]  # 0=stem, 1=s1, 2=s2, 3=s3, 4=s4
+frozen_stages: 1           # -1=none, 0=stem, 1=stem+stage1, ...
