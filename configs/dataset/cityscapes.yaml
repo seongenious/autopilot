@@ -1,0 +1,36 @@
+# Cityscapes dataset configuration for panoptic segmentation
+name: cityscapes
+type: CityscapesDataset
+
+# Data paths
+data_root: data/cityscapes
+
+# Image settings
+img_size: [1024, 2048]  # H, W (original)
+crop_size: [512, 1024]  # H, W (training crop)
+img_norm_cfg:
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+# Class settings (things first, then stuff)
+num_things_classes: 8   # person, rider, car, truck, bus, train, motorcycle, bicycle
+num_stuff_classes: 11   # road, sidewalk, building, wall, fence, pole, traffic light, traffic sign, vegetation, terrain, sky
+num_classes: 19         # total
+
+# Instance target generation
+gaussian_sigma: 8.0     # Sigma for center heatmap gaussian
+
+# Dataloader settings
+dataloader:
+  train:
+    batch_size: 4
+    num_workers: 4
+    shuffle: true
+    drop_last: true
+    pin_memory: true
+  val:
+    batch_size: 1
+    num_workers: 4
+    shuffle: false
+    drop_last: false
+    pin_memory: true

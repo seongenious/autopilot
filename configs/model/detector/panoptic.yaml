@@ -1,0 +1,49 @@
+type: Panoptic
+
+backbone:
+  type: ResNet
+  depth: 34
+  pretrained: true
+  out_indices: [1, 2, 3, 4]
+  frozen_stages: 1
+
+neck:
+  type: BiFPN
+  in_channels: [64, 128, 256, 512]  # ResNet34
+  out_channels: 256
+  num_layers: 3
+
+sem_context:
+  type: ContextAggregator
+  in_channels: 256
+  out_channels: 256
+  num_levels: 4
+  target_level: 1  # 1/8 scale
+  fusion: concat
+
+inst_context:
+  type: ContextAggregator
+  in_channels: 256
+  out_channels: 128
+  num_levels: 4
+  target_level: 1  # 1/8 scale
+  fusion: concat
+
+head:
+  type: PanopticHead
+  num_things_classes: 8
+  num_stuff_classes: 11
+  scale_factor: 8
+  # Semantic branch
+  sem_in_channels: 256
+  sem_decoder_channels: 256
+  sem_head_channels: 256
+  # Instance branch
+  inst_in_channels: 128
+  inst_decoder_channels: 128
+  inst_head_channels: 32
+  # Loss weights
+  loss_semantic_weight: 1.0
+  loss_center_weight: 200.0
+  loss_offset_weight: 0.01
+  ignore_index: 255

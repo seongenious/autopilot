@@ -1,0 +1,51 @@
+# @package _global_
+# Perspective view pretraining configuration
+# Panoptic segmentation (+ depth estimation in future)
+
+defaults:
+  - /model/detector: panoptic
+  - /dataset: cityscapes
+  - /training: default
+  - _self_
+
+# Experiment settings
+experiment:
+  name: perception2d
+  seed: 42
+  deterministic: false
+
+# Dataset overrides
+dataset:
+  crop_size: [512, 1024]
+
+# Training overrides
+training:
+  trainer:
+    max_epochs: 20
+    precision: 16-mixed
+    gradient_clip_val: 35.0
+    log_every_n_steps: 50
+  optimizer:
+    lr: 1.0e-4
+  scheduler:
+    T_max: ${training.trainer.max_epochs}
+
+# Custom hooks
+custom_hooks:
+  - type: VisualizationHook
+    interval: 1
+    num_samples: 5
+
+# Output directories
+output:
+  root_dir: outputs
+  exp_dir: ${output.root_dir}/${experiment.name}
+  checkpoint_dir: ${output.exp_dir}/checkpoints
+  log_dir: ${output.exp_dir}/logs
+
+# Hydra configuration
+hydra:
+  run:
+    dir: ${output.exp_dir}
+  job:
+    chdir: false

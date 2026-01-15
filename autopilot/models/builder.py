@@ -5,6 +5,7 @@ from autopilot.utils.registry import (
     ENCODERS,
     HEADS,
     LOSSES,
+    MODELS,
     NECKS,
 )
 
@@ -32,3 +33,8 @@ def build_head(cfg):
 def build_loss(cfg):
     """Build loss from config."""
     return LOSSES.build(cfg)
+
+
+def build_model(cfg):
+    """Build model from config."""
+    return MODELS.build(cfg)

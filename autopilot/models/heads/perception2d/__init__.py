@@ -1,5 +1,12 @@
 """2D perception heads (perspective view)."""
 
-from .panoptic_head import PanopticHead
+from .depth import DepthHead
+from .panoptic import ContextDecoder, InstanceHead, PanopticHead, SemanticHead
 
-__all__ = ['PanopticHead']
+__all__ = [
+    'ContextDecoder',
+    'DepthHead',
+    'InstanceHead',
+    'PanopticHead',
+    'SemanticHead',
+]

@@ -1,6 +1,6 @@
 # Panoptic FPN head configuration
 # Based on 'Panoptic Feature Pyramid Networks' (CVPR 2019)
-type: PanopticHead
+type: PanopticFPN
 in_channels: 256              # Input channels from FPN/BiFPN
 num_things_classes: 8         # Instance classes (car, person, etc.)
 num_stuff_classes: 11         # Stuff classes (road, sky, etc.)
