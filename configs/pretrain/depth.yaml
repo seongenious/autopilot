@@ -19,7 +19,7 @@ dataset:
   # Depth parameters (passed to CityscapesDataset)
   min_depth: 1.0
   max_depth: 150.0
-  num_bins: 64
+  num_bins: 33
   sigma_ratio: 0.1
 
 # Training overrides

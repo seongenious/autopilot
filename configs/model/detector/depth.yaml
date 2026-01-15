@@ -16,17 +16,17 @@ neck:
 context:
   type: ContextAggregator
   in_channels: 256
-  out_channels: 128
+  out_channels: 256
   num_levels: 4
   target_level: 1  # 1/8 scale
   fusion: concat
 
 head:
   type: DepthHead
-  num_bins: 33
+  num_bins: 64
   min_depth: 1.0
   max_depth: 150.0
   scale_factor: 8
-  in_channels: 128
-  inner_channels: 64
+  in_channels: 256
+  inner_channels: 256
   loss_weight: 1.0
