@@ -1,0 +1,54 @@
+# @package _global_
+# Joint Panoptic + Depth pretraining configuration
+
+defaults:
+  - /model/detector: joint2d
+  - /dataset: cityscapes
+  - /training: default
+  - _self_
+
+# Experiment settings
+experiment:
+  name: joint_panoptic_depth
+  seed: 42
+  deterministic: false
+
+# Dataset overrides
+dataset:
+  crop_size: [384, 768]  # Reduced from [512, 1024] for memory
+  dataloader:
+    train:
+      batch_size: 2  # Reduced from 4
+
+# Training overrides
+training:
+  trainer:
+    max_epochs: 20
+    precision: 16-mixed
+    gradient_clip_val: 35.0
+    log_every_n_steps: 50
+    accumulate_grad_batches: 2  # Effective batch size = 2 * 2 = 4
+  optimizer:
+    lr: 1.0e-4
+  scheduler:
+    T_max: ${training.trainer.max_epochs}
+
+# Custom hooks
+custom_hooks:
+  - type: VisualizationHook
+    interval: 1
+    num_samples: 5
+
+# Output directories
+output:
+  root_dir: outputs
+  exp_dir: ${output.root_dir}/${experiment.name}
+  checkpoint_dir: ${output.exp_dir}/checkpoints
+  log_dir: ${output.exp_dir}/logs
+
+# Hydra configuration
+hydra:
+  run:
+    dir: ${output.exp_dir}
+  job:
+    chdir: false

@@ -272,10 +272,11 @@ def visualize_depth(
     depth_clipped = np.clip(depth, min_depth, max_depth)
     log_depth = np.log(depth_clipped)
 
-    # Map to [0, 255] for colormap lookup
+    # Map to colormap indices
     norm_depth = (log_depth - log_min) / (log_max - log_min)
-    indices = (norm_depth * 255).astype(np.int32)
-    indices = np.clip(indices, 0, 255)
+    num_colors = len(TURBO_COLORMAP)
+    indices = (norm_depth * (num_colors - 1)).astype(np.int32)
+    indices = np.clip(indices, 0, num_colors - 1)
 
     return TURBO_COLORMAP[indices]
 
@@ -348,6 +349,83 @@ def visualize_depth_predictions(
     return grid
 
 
+def visualize_joint2d_predictions(
+    image: np.ndarray,
+    semantic_pred: np.ndarray,
+    semantic_gt: np.ndarray,
+    center_pred: np.ndarray,
+    center_gt: np.ndarray,
+    offset_pred: np.ndarray,
+    offset_gt: np.ndarray,
+    depth_pred: np.ndarray,
+    depth_gt: np.ndarray,
+    mean: Tuple[float, ...] = (0.485, 0.456, 0.406),
+    std: Tuple[float, ...] = (0.229, 0.224, 0.225),
+    center_threshold: float = 0.1,
+    min_depth: float = 1.0,
+    max_depth: float = 150.0,
+) -> np.ndarray:
+    """Create a 2x4 grid visualization for joint panoptic + depth.
+
+    Layout:
+        Row 1 (GT):   Semantic GT | Center GT | Offset GT | Depth GT
+        Row 2 (Pred): Semantic Pred | Center Pred | Offset Pred | Depth Pred
+
+    Args:
+        image: Input image (3, H, W) normalized.
+        semantic_pred: Predicted semantic segmentation (H, W).
+        semantic_gt: Ground truth semantic segmentation (H, W).
+        center_pred: Predicted center heatmap (1, H, W) or (H, W).
+        center_gt: Ground truth center heatmap (1, H, W) or (H, W).
+        offset_pred: Predicted offset (2, H, W).
+        offset_gt: Ground truth offset (2, H, W).
+        depth_pred: Predicted depth (1, H, W) or (H, W).
+        depth_gt: Ground truth depth (1, H, W) or (H, W).
+        mean: Image normalization mean.
+        std: Image normalization std.
+        center_threshold: Threshold for center heatmap visualization.
+        min_depth: Minimum depth for visualization.
+        max_depth: Maximum depth for visualization.
+
+    Returns:
+        Visualization grid (2*H, 4*W, 3) uint8.
+    """
+    vis_image = denormalize_image(image, mean, std)
+
+    # Semantic visualizations
+    vis_semantic_gt = visualize_semantic(semantic_gt)
+    vis_semantic_pred = visualize_semantic(semantic_pred)
+
+    # Center visualizations (overlay on image)
+    vis_center_gt = visualize_center_heatmap(center_gt, vis_image, threshold=center_threshold)
+    vis_center_pred = visualize_center_heatmap(center_pred, vis_image, threshold=center_threshold)
+
+    # Offset visualizations
+    vis_offset_gt = visualize_offset(offset_gt)
+    vis_offset_pred = visualize_offset(offset_pred)
+
+    # Depth visualizations
+    vis_depth_gt = visualize_depth(depth_gt, min_depth, max_depth)
+    vis_depth_pred = visualize_depth(depth_pred, min_depth, max_depth)
+
+    H, W = vis_image.shape[:2]
+    grid = np.zeros((2 * H, 4 * W, 3), dtype=np.uint8)
+
+    # Row 1: GT
+    grid[:H, :W] = vis_semantic_gt
+    grid[:H, W:2*W] = vis_center_gt
+    grid[:H, 2*W:3*W] = vis_offset_gt
+    grid[:H, 3*W:] = vis_depth_gt
+
+    # Row 2: Pred
+    grid[H:, :W] = vis_semantic_pred
+    grid[H:, W:2*W] = vis_center_pred
+    grid[H:, 2*W:3*W] = vis_offset_pred
+    grid[H:, 3*W:] = vis_depth_pred
+
+    return grid
+
+
 @HOOKS.register_module()
 class VisualizationHook(Hook):
     """Hook for visualizing predictions during training.
@@ -390,9 +468,15 @@ class VisualizationHook(Hook):
         """Set the validation dataset for visualization."""
         self.val_dataset = dataset
 
-    def _is_depth_model(self, model) -> bool:
-        """Check if model is a depth estimation model."""
-        return model.__class__.__name__ == 'Depth'
+    def _get_model_type(self, model) -> str:
+        """Get model type for visualization."""
+        model_name = model.__class__.__name__
+        if model_name == 'Depth':
+            return 'depth'
+        elif model_name == 'Joint2d':
+            return 'joint2d'
+        else:
+            return 'panoptic'
 
     def after_train_epoch(
         self,
@@ -418,7 +502,7 @@ class VisualizationHook(Hook):
         epoch_dir.mkdir(parents=True, exist_ok=True)
 
         sample_indices = list(range(min(self.num_samples, len(self.val_dataset))))
-        is_depth = self._is_depth_model(model)
+        model_type = self._get_model_type(model)
 
         with torch.no_grad():
             for idx in sample_indices:
@@ -428,11 +512,35 @@ class VisualizationHook(Hook):
                 preds = model.predict(image)
                 image_np = sample['image'].numpy()
 
-                if is_depth:
+                if model_type == 'depth':
                     # Depth model visualization
                     depth_np = preds['depth'][0].cpu().numpy()
                     grid = visualize_depth_predictions(
                         image_np, depth_np,
+                        mean=self.mean, std=self.std,
+                        min_depth=self.min_depth, max_depth=self.max_depth,
+                    )
+                elif model_type == 'joint2d':
+                    # Joint2d model visualization (GT row + Pred row)
+                    semantic_pred = preds['semantic'][0].cpu().numpy()
+                    center_pred = preds['center'][0].cpu().numpy()
+                    offset_pred = preds['offset'][0].cpu().numpy()
+                    depth_pred = preds['depth'][0].cpu().numpy()
+
+                    # Get GT from sample
+                    semantic_gt = sample['semantic_target'].numpy()
+                    center_gt = sample['center_target'].numpy()
+                    offset_gt = sample['offset_target'].numpy()
+                    # For depth GT, convert soft targets to depth values
+                    depth_target = sample['depth_target'].numpy()  # (num_bins, H, W)
+                    depth_gt = self._soft_target_to_depth(depth_target)
+
+                    grid = visualize_joint2d_predictions(
+                        image_np,
+                        semantic_pred, semantic_gt,
+                        center_pred, center_gt,
+                        offset_pred, offset_gt,
+                        depth_pred, depth_gt,
                         mean=self.mean, std=self.std,
                         min_depth=self.min_depth, max_depth=self.max_depth,
                     )
@@ -451,3 +559,27 @@ class VisualizationHook(Hook):
                 Image.fromarray(grid).save(save_path)
 
         model.train()
+
+    def _soft_target_to_depth(self, soft_target: np.ndarray) -> np.ndarray:
+        """Convert soft target (num_bins, H, W) to depth values.
+
+        Args:
+            soft_target: Soft target probabilities (num_bins, H, W).
+
+        Returns:
+            Depth values (H, W) in meters.
+        """
+        num_bins = soft_target.shape[0]
+        # Create log-spaced bin centers
+        bin_edges = np.linspace(
+            np.log(self.min_depth), np.log(self.max_depth), num_bins + 1
+        )
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+        bin_centers = np.exp(bin_centers)  # Convert back to linear space
+
+        # Weighted sum of bin centers
+        # soft_target: (num_bins, H, W), bin_centers: (num_bins,)
+        depth = np.sum(
+            soft_target * bin_centers[:, None, None], axis=0
+        )
+        return depth

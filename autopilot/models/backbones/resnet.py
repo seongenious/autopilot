@@ -5,6 +5,7 @@ from typing import List, Tuple
 import timm
 import torch
 import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
 
 from autopilot.models.base import BaseModule
 from autopilot.utils.registry import BACKBONES
@@ -41,6 +42,7 @@ class ResNet(BaseModule):
         pretrained: bool = True,
         out_indices: Tuple[int, ...] = (1, 2, 3, 4),
         frozen_stages: int = -1,
+        with_cp: bool = False,
     ):
         """Initialize ResNet backbone.
 
@@ -49,6 +51,7 @@ class ResNet(BaseModule):
             pretrained: Whether to use pretrained weights.
             out_indices: Output feature indices (1=C2, 2=C3, 3=C4, 4=C5). 0=stem.
             frozen_stages: Stages to freeze (-1=none, 0=stem, 1=stem+stage1, ...).
+            with_cp: Use gradient checkpointing to save memory (slower but less memory).
         """
         super().__init__()
 
@@ -58,6 +61,7 @@ class ResNet(BaseModule):
         self.depth = depth
         self.out_indices = out_indices
         self.frozen_stages = frozen_stages
+        self.with_cp = with_cp
 
         # Create model with timm
         model_name = self.DEPTH_TO_MODEL[depth]
@@ -105,6 +109,8 @@ class ResNet(BaseModule):
         Returns:
             List of feature maps at different scales.
         """
+        if self.with_cp and self.training:
+            return checkpoint(self.model, x, use_reentrant=False)
         return self.model(x)
 
     def train(self, mode: bool = True) -> 'ResNet':
