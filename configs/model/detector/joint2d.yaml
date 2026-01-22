@@ -18,7 +18,7 @@ neck:
 sem_context:
   type: ContextAggregator
   in_channels: 256
-  out_channels: 256
+  out_channels: 128
   num_levels: 4
   target_level: 1  # 1/8 scale
   fusion: concat
@@ -26,7 +26,7 @@ sem_context:
 inst_context:
   type: ContextAggregator
   in_channels: 256
-  out_channels: 128
+  out_channels: 64
   num_levels: 4
   target_level: 1  # 1/8 scale
   fusion: concat
@@ -35,7 +35,7 @@ inst_context:
 depth_context:
   type: ContextAggregator
   in_channels: 256
-  out_channels: 256
+  out_channels: 64
   num_levels: 4
   target_level: 1  # 1/8 scale
   fusion: concat
@@ -47,16 +47,16 @@ panoptic_head:
   num_stuff_classes: 11
   scale_factor: 8
   # Semantic branch
-  sem_in_channels: 256
-  sem_decoder_channels: 256
-  sem_head_channels: 256
+  sem_in_channels: 128
+  sem_decoder_channels: 128
+  sem_head_channels: 64
   # Instance branch
-  inst_in_channels: 128
-  inst_decoder_channels: 128
+  inst_in_channels: 64
+  inst_decoder_channels: 64
   inst_head_channels: 32
   # Loss weights
   loss_semantic_weight: 1.0
-  loss_center_weight: 200.0
+  loss_center_weight: 100.0
   loss_offset_weight: 0.01
   ignore_index: 255
 
@@ -67,8 +67,8 @@ depth_head:
   min_depth: 1.0
   max_depth: 150.0
   scale_factor: 8
-  in_channels: 256
-  inner_channels: 256
+  in_channels: 64
+  inner_channels: 64
   loss_weight: 1.0
 
 # Task loss weights

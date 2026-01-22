@@ -9,16 +9,20 @@ defaults:
 
 # Experiment settings
 experiment:
-  name: joint_panoptic_depth
+  name: joint2d
   seed: 42
   deterministic: false
 
 # Dataset overrides
 dataset:
-  crop_size: [384, 768]  # Reduced from [512, 1024] for memory
+  crop_size: [512, 1024]  # Reduced from [512, 1024] for memory
+  min_depth: 1.0
+  max_depth: 150.0
+  num_bins: 64
+  sigma_ratio: 0.1
   dataloader:
     train:
-      batch_size: 2  # Reduced from 4
+      batch_size: 2
 
 # Training overrides
 training:
